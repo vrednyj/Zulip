@@ -180,7 +180,7 @@ MIDDLEWARE = (
     "zerver.middleware.RateLimitMiddleware",
     "zerver.middleware.FlushDisplayRecipientCache",
     "zerver.middleware.ZulipCommonMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    "zerver.lib.sessions.LoggingSessionMiddleware",
     "zerver.middleware.LocaleMiddleware",
     "zerver.middleware.HostDomainMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -858,6 +858,12 @@ LOGGING: Dict[str, Any] = {
             "formatter": "webhook_request_data",
             "filename": WEBHOOK_ANOMALOUS_PAYLOADS_LOG_PATH,
         },
+        "session_debug_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.WatchedFileHandler",
+            "formatter": "default",
+            "filename": zulip_path("/var/log/zulip/session_debug.log"),
+        },
     },
     "loggers": {
         # The Python logging module uses a hierarchy of logger names for config:
@@ -886,7 +892,7 @@ LOGGING: Dict[str, Any] = {
         "": {
             "level": "INFO",
             "filters": ["require_logging_enabled"],
-            "handlers": DEFAULT_ZULIP_HANDLERS,
+            "handlers": [*DEFAULT_ZULIP_HANDLERS, "session_debug_file"],
         },
         # Django, alphabetized
         "django": {
@@ -956,6 +962,11 @@ LOGGING: Dict[str, Any] = {
         # our own loggers, alphabetized
         "zerver.lib.digest": {
             "level": "DEBUG",
+        },
+        "zerver.lib.sessions": {
+            "level": "DEBUG",
+            "handlers": [*DEFAULT_ZULIP_HANDLERS, "session_debug_file"],
+            "propagate": False,
         },
         "zerver.management.commands.deliver_scheduled_emails": {
             "level": "DEBUG",
